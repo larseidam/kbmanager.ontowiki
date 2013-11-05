@@ -39,13 +39,13 @@
         </td>
         <td class="storeModelButtonTd">
             <a id="addResource" class="button" onclick="javascript:renewAllModel('all')">
-                Renew 
+                <?php echo $this->_translate->_('renewKB') . "" ?> 
             </a>
             <a id="addResource" class="button" onclick="javascript:renewAllModel('add')">
-                Add
+                <?php echo $this->_translate->_('addKB') . "" ?> 
             </a>
             <a id="addResource" class="button" onclick="javascript:renewAllModel('delete')">
-                Delete
+                <?php echo $this->_translate->_('deleteKB') . "" ?> 
             </a>
         </td>
         <td class="storeModelProcessTd">
@@ -90,22 +90,22 @@
                         }
                     ?>
                     <a id="model<?php echo $modelName ?>RenewA" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'all')">
-                        Renew
+                        <?php echo $this->_translate->_('renewKB') . "" ?> 
                     </a>
                     <div id="model<?php echo $modelName ?>RenewDiv" class="<?php echo $hiddenAddClass ?> storeDisabledButton">
-                        Renew
+                        <?php echo $this->_translate->_('renewKB') . "" ?> 
                     </div>
                     <a id="model<?php echo $modelName ?>AddA" class="<?php echo $hiddenAddClass ?> button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'add')">
-                        Add
+                        <?php echo $this->_translate->_('addKB') . "" ?> 
                     </a>
                     <div id="model<?php echo $modelName ?>AddDiv" class="<?php echo $hiddenRemoveClass ?>storeDisabledButton">
-                        Add
+                        <?php echo $this->_translate->_('addKB') . "" ?> 
                     </div>
                     <a id="model<?php echo $modelName ?>DeleteA" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'delete')">
-                        Delete
+                        <?php echo $this->_translate->_('deleteKB') . "" ?> 
                     </a>
                     <div id="model<?php echo $modelName ?>DeleteDiv" class="<?php echo $hiddenAddClass ?>storeDisabledButton">
-                        Delete
+                        <?php echo $this->_translate->_('deleteKB') . "" ?> 
                     </div>
                 </td>
                 <td class="storeModelProcessTd">

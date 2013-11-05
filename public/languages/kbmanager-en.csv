@@ -2,3 +2,6 @@ hidden;hide
 status;Status
 available;exist
 notavailable;not exist
+renewKB;renew
+addKB;add
+deleteKB;delete

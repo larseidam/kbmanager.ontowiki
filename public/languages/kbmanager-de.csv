@@ -2,3 +2,6 @@ hidden;verbergen
 status;Status
 available;existiert
 notavailable;existiert nicht
+renewKB;ersetzen
+addKB;anlegen
+deleteKB;löschen
