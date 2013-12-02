@@ -1,7 +1,12 @@
+backupQuestion;Backup gelöschter Ontologien anlegen?
 hidden;verbergen
 status;Status
 available;existiert
 notavailable;existiert nicht
+createKB;erstellen
+fillKB;füllen
+addKB;erstellen und füllen
 renewKB;ersetzen
-addKB;anlegen
+clearKB;leeren
 deleteKB;löschen
+backupKB;sichern

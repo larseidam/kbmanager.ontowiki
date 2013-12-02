@@ -11,37 +11,43 @@
 
 function renewAllModel(mode) {
     var result = 0;
-	$("#responseAll").html('<div class="storeProcessDiv storeWorkingDiv">Working</div>');
+	$("#responseAll").html('<div class="storeProcessDiv storeWorkingDiv"></div>');
+	$("#storeModelProcessArea").append('Start working to ' + mode + ' all Models\n');
 	$.each(models, function(res){
         if ('namespaces' != res)
             result += renewModel(res, mode);
 	});
-    if (0 == result)
-        $("#responseAll").html('<div class="storeProcessDiv storeFinshDiv">Finish</div>');
-    else
-        $("#responseAll").html('<div class="storeProcessDiv storeErrorDiv">Error (' + result + ')</div>');
+    if (0 == result) {
+        $("#responseAll").html('<div class="storeProcessDiv storeFinshDiv"></div>');
+        $("#storeModelProcessArea").append('Finish working to ' + mode + ' all Models\n');
+    }
+    else {
+        $("#responseAll").html('<div class="storeProcessDiv storeErrorDiv"></div>');
+        $("#storeModelProcessArea").append('Error on ' + mode + ' all Models (Code: ' + result + ')\n');
+    }
     
 }
 function renewModel(modelName, mode) {
     var result = 0;
     $("#response" + modelName).empty();
-	$("#response" + modelName).html('<div class="storeProcessDiv storeWorkingDiv">Start</div>');
+	$("#response" + modelName).html('<div class="storeProcessDiv storeWorkingDiv"></div>');
+	$("#storeModelProcessArea").append('Start to ' + mode + ' Model ' + modelName + '\n');
 	
-	if ('delete' == mode || 'all' == mode)
-		result += deleteModel(modelName);
-		
-	if ('add' == mode || 'all' == mode)
-		result += addModel(modelName);
+	result += changeModel(modelName, mode);
 	
-    if (0 == result)
-        $("#response" + modelName).html('<div class="storeProcessDiv storeFinshDiv">Finish</div>');
-    else
-        $("#response" + modelName).html('<div class="storeProcessDiv storeErrorDiv">Error (' + result + ')</div>');
+    if (0 == result) {
+        $("#response" + modelName).html('<div class="storeProcessDiv storeFinshDiv"></div>');
+        $("#storeModelProcessArea").append('Finish to ' + mode + ' Model ' + modelName + '\n');
+    }
+    else {
+        $("#response" + modelName).html('<div class="storeProcessDiv storeErrorDiv"></div>');
+        $("#storeModelProcessArea").append('Error on ' + mode + ' Model ' + modelName + ' (Code: ' + result + ')\n');
+    }
     
     return result;
 }
 
-function deleteModel(modelName) {
+function changeModel(modelName, mode) {
     var returnValue = 0;
 	$.ajax({
         async:false,
@@ -49,7 +55,8 @@ function deleteModel(modelName) {
         type: "POST",
         data: {
             modelName: modelName,
-            do: 'remove',
+            do: mode,
+            hidden: $('#model' + modelName + 'Hidden').is(":checked") ? $('#model' + modelName + 'Hidden').val() : 'false',
             backup: $('#storeBackup').is(":checked") ? $('#storeBackup').val() : 'false'
         },
         context: $("#response" + modelName),
@@ -60,51 +67,14 @@ function deleteModel(modelName) {
             $(this).html('<div class="storeProcessDiv storeWorkingDiv">delete Model: ' + models[modelName].namespace + '</div>');
             try {
                 if (undefined != res.error) {
+                    $("#storeModelProcessArea").append('\tFailure: ' + res.error + '\n');
                     returnValue = -1;
                 }
                 else {
-                    changeButtons('removed', modelName);
-                }
-            }
-            catch (err) {
-                returnValue = -1;
-            }
-        },
-        
-        error: function (jqXHR, textStatus, errorThrown)
-        {
-            console.log (jqXHR);
-            console.log (textStatus);
-            console.log (errorThrown);
-            returnValue = -1;
-        }
-    });
-    return returnValue;
-}
-
-function addModel(modelName) {
-    var returnValue = 0;
-    $.ajax({
-        async:false,
-        dataType: "json",
-        type: "POST",
-        data: {
-            modelName: modelName,
-            do: 'add',
-            hidden: $('#model' + modelName + 'Hidden').is(":checked") ? $('#model' + modelName + 'Hidden').val() : 'false'
-        },
-        context: $("#response" + modelName),
-        url: 'changemodel/',
-        // complete, no errors
-        success: function ( res ) 
-        {
-            $(this).html('<div class="storeProcessDiv storeWorkingDiv">add Model: ' + models[modelName].namespace + '</div>');
-            try {
-                if (undefined != res.error) {
-                    returnValue = -1;
-                }
-                else {
-                    changeButtons('added', modelName);
+                    $.each(res.log, function(logEntry){
+                        $("#storeModelProcessArea").append('\t' + res.log[logEntry] + '\n');
+                    });
+                    changeButtons(mode, modelName);
                 }
             }
             catch (err) {
@@ -117,32 +87,33 @@ function addModel(modelName) {
             console.log (jqXHR);
             console.log (textStatus);
             console.log (errorThrown);
-            returnValue = -2;
+            returnValue = -3;
         }
     });
     return returnValue;
 }
 
 function changeButtons(mode, modelName) {
-    console.log(mode, modelName);
     
-    if ('added' == mode) {
-        $('#model' + modelName + 'RenewA').removeClass('storeHidden');
-        $('#model' + modelName + 'RenewDiv').addClass('storeHidden');
-        $('#model' + modelName + 'AddA').addClass('storeHidden');
-        $('#model' + modelName + 'AddDiv').removeClass('storeHidden');
-        $('#model' + modelName + 'DeleteA').removeClass('storeHidden');
-        $('#model' + modelName + 'DeleteDiv').addClass('storeHidden');
+    if ('create' == mode || 'add' == mode) {
+        $('#model' + modelName + 'Create').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Fill').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Add').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Renew').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Clear').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Delete').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Backup').removeClass('storeDisabledButton');
         $('#model' + modelName + 'StatusA').removeClass('storeHidden');
         $('#model' + modelName + 'StatusNA').addClass('storeHidden');
         
-    } else if ('removed' == mode) {
-        $('#model' + modelName + 'RenewA').addClass('storeHidden');
-        $('#model' + modelName + 'RenewDiv').removeClass('storeHidden');
-        $('#model' + modelName + 'AddA').removeClass('storeHidden');
-        $('#model' + modelName + 'AddDiv').addClass('storeHidden');
-        $('#model' + modelName + 'DeleteA').addClass('storeHidden');
-        $('#model' + modelName + 'DeleteDiv').removeClass('storeHidden');
+    } else if ('delete' == mode) {
+        $('#model' + modelName + 'Create').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Fill').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Add').removeClass('storeDisabledButton');
+        $('#model' + modelName + 'Renew').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Clear').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Delete').addClass('storeDisabledButton');
+        $('#model' + modelName + 'Backup').addClass('storeDisabledButton');
         $('#model' + modelName + 'StatusA').addClass('storeHidden');
         $('#model' + modelName + 'StatusNA').removeClass('storeHidden');
     }

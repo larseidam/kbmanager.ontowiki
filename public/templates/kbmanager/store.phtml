@@ -13,9 +13,6 @@
 <script type="text/javascript">       
     var url = '<?php echo $this->url; ?>';
     var models = <?php echo json_encode($this->models); ?>;
-    var createUrl = url + "model/create";
-    var addUrl = url + "model/add";
-    var deleteUrl = url + "model/delete/";
 </script>
 
 <!-- set the title of the action -->
@@ -24,7 +21,7 @@
 <table id="storeTable">
     <tr>
         <td class="storeModelNameTd">
-            Backup old ontologies?
+            <?php echo $this->_translate->_('backupQuestion') ?>
         </td>
         <td class="storeModelStatusTd">
             <div class="onoffswitch">
@@ -59,14 +56,26 @@
 		<td class="storeModelHiddenTd">
         </td>
         <td class="storeModelButtonTd">
-            <a id="addResource" class="button" onclick="javascript:renewAllModel('all')">
-                <?php echo $this->_translate->_('renewKB') . "" ?> 
+            <a id="allCreate" class="button" onclick="javascript:renewAllModel('create')" title="<?php echo $this->_translate->_('createKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/createKB.png" alt="<?php echo $this->_translate->_('createKB') ?>">
             </a>
-            <a id="addResource" class="button" onclick="javascript:renewAllModel('add')">
-                <?php echo $this->_translate->_('addKB') . "" ?> 
+            <a id="allFill" class="button" onclick="javascript:renewAllModel('fill')" title="<?php echo $this->_translate->_('fillKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/fillKB.png" alt="<?php echo $this->_translate->_('fillKB') ?>">
             </a>
-            <a id="addResource" class="button" onclick="javascript:renewAllModel('delete')">
-                <?php echo $this->_translate->_('deleteKB') . "" ?> 
+            <a id="allAdd" class="button" onclick="javascript:renewAllModel('add')" title="<?php echo $this->_translate->_('addKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/addKB.png" alt="<?php echo $this->_translate->_('addKB') ?>">
+            </a>
+            <a id="allRenew" class="button" onclick="javascript:renewAllModel('renew')" title="<?php echo $this->_translate->_('renewKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/renewKB.png" alt="<?php echo $this->_translate->_('renewKB') ?>">
+            </a>
+            <a id="allClear" class="button" onclick="javascript:renewAllModel('clear')" alt="<?php echo $this->_translate->_('clearKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/clearKB.png" title="<?php echo $this->_translate->_('clearKB') ?>">
+            </a>
+            <a id="allDelete" class="button" onclick="javascript:renewAllModel('delete')" alt="<?php echo $this->_translate->_('deleteKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/deleteKB.png" title="<?php echo $this->_translate->_('deleteKB') ?>">
+            </a>
+            <a id="allBackup" class="button" onclick="javascript:renewAllModel('backup')" alt="<?php echo $this->_translate->_('backupKB') ?>">
+                <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/backupKB.png" title="<?php echo $this->_translate->_('backupKB') ?>">
             </a>
         </td>
         <td class="storeModelProcessTd">
@@ -76,7 +85,7 @@
 	<?php foreach($this->models as $modelName => $modelData) { ?>
         <tr>
             <?php if ('namespaces' != $modelName) { ?>
-                <td class="storeModelNameTd">
+                <td class="storeModelNameTd" title="<?php echo $modelData['namespace'] ?>">
                     <span class="storeModelNameSpan"><?php echo $modelName; ?></span>
                 </td>
                 <td class="storeModelStatusTd">
@@ -109,38 +118,51 @@
                 <td class="storeModelButtonTd">
                     <?php
                         if (isset($this->storedModels[$modelData['namespace']])) {
-                            $hiddenAddClass = "storeHidden ";
+                            $hiddenAddClass = " storeDisabledButton ";
                             $hiddenRemoveClass = "";
                         } else {
                             $hiddenAddClass = "";
-                            $hiddenRemoveClass = "storeHidden ";
+                            $hiddenRemoveClass = " storeDisabledButton ";
                         }
                     ?>
-                    <a id="model<?php echo $modelName ?>RenewA" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'all')">
-                        <?php echo $this->_translate->_('renewKB') . "" ?> 
+                    <a id="model<?php echo $modelName ?>Create" class="button <?php echo $hiddenAddClass ?>" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'create')" title="<?php echo $this->_translate->_('createKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/createKB.png" alt="<?php echo $this->_translate->_('createKB') ?>">
                     </a>
-                    <div id="model<?php echo $modelName ?>RenewDiv" class="<?php echo $hiddenAddClass ?> storeDisabledButton">
-                        <?php echo $this->_translate->_('renewKB') . "" ?> 
-                    </div>
-                    <a id="model<?php echo $modelName ?>AddA" class="<?php echo $hiddenAddClass ?> button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'add')">
-                        <?php echo $this->_translate->_('addKB') . "" ?> 
+                    <a id="model<?php echo $modelName ?>Fill" class="button <?php echo $hiddenRemoveClass ?>" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'fill')" title="<?php echo $this->_translate->_('fillKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/fillKB.png" alt="<?php echo $this->_translate->_('fillKB') ?>">
                     </a>
-                    <div id="model<?php echo $modelName ?>AddDiv" class="<?php echo $hiddenRemoveClass ?>storeDisabledButton">
-                        <?php echo $this->_translate->_('addKB') . "" ?> 
-                    </div>
-                    <a id="model<?php echo $modelName ?>DeleteA" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'delete')">
-                        <?php echo $this->_translate->_('deleteKB') . "" ?> 
+                    <a id="model<?php echo $modelName ?>Add" class="button <?php echo $hiddenAddClass ?>" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'add')" title="<?php echo $this->_translate->_('addKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/addKB.png" alt="<?php echo $this->_translate->_('addKB') ?>">
                     </a>
-                    <div id="model<?php echo $modelName ?>DeleteDiv" class="<?php echo $hiddenAddClass ?>storeDisabledButton">
-                        <?php echo $this->_translate->_('deleteKB') . "" ?> 
-                    </div>
+                    <a id="model<?php echo $modelName ?>Renew" class="button <?php echo $hiddenRemoveClass ?>" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'renew')" title="<?php echo $this->_translate->_('renewKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/renewKB.png" alt="<?php echo $this->_translate->_('renewKB') ?>">
+                    </a>
+                    <a id="model<?php echo $modelName ?>Clear" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'clear')" title="<?php echo $this->_translate->_('clearKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/clearKB.png" alt="<?php echo $this->_translate->_('clearKB') ?>">
+                    </a>
+                    <a id="model<?php echo $modelName ?>Delete" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'delete')" title="<?php echo $this->_translate->_('deleteKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/deleteKB.png" alt="<?php echo $this->_translate->_('deleteKB') ?>">
+                    </a>
+                    <a id="model<?php echo $modelName ?>Backup" class="<?php echo $hiddenRemoveClass ?>button" onclick="javascript:renewModel('<?php echo $modelName; ?>', 'backup')" title="<?php echo $this->_translate->_('backupKB') ?>">
+                        <img src="<?php echo $this->url; ?>/extensions/kbmanager/public/img/backupKB.png" alt="<?php echo $this->_translate->_('backupKB') ?>">
+                    </a>
                 </td>
                 <td class="storeModelProcessTd">
                     <div id="response<?php echo $modelName; ?>"></div>
                 </td>
             <?php } ?>
-        </tr>    
+        </tr>
 	<?php } ?>
+    <tr>
+        <td class="storeModelNameTd">
+            <span class="storeModelNameSpan">Log</span>
+        </td>
+        <td></td>
+        <td></td>
+        <td class="storeModelButtonTd">
+            <textarea id="storeModelProcessArea"></textarea>
+        </td>
+    </tr>
 </table>
 
 

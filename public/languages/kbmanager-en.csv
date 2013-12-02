@@ -1,7 +1,12 @@
+backupQuestion;Backup deleted ontologies?
 hidden;hide
 status;Status
 available;exist
 notavailable;not exist
+createKB;create
+fillKB;fill
+addKB;create & fill
 renewKB;renew
-addKB;add
+clearKB;clear
 deleteKB;delete
+backupKB;backup

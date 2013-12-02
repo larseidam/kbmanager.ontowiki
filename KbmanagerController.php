@@ -90,89 +90,35 @@ class KbmanagerController extends OntoWiki_Controller_Component
                 $jsonReturnValue['modelUri'] = $this->_ontologies[$modelName]['namespace'];
                 $jsonReturnValue['files'] = array();
                 $jsonReturnValue['log'] = array();
-                if ("remove" == $action)
-                {
-                    if ($this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace']))
-                    {
-                        if ('true' == $backup)
-                        {
-                            $this->_backupOntology($modelName);
-                        }
-                        $this->_store->deleteModel($this->_ontologies[$modelName]['namespace']);
-                        $jsonReturnValue['log'][] = "model removed";
-                    } else {
-                        $jsonReturnValue['error'] = "model not available";
-                    }
-                }
-                if ("add" == $action)
-                {
-                    // get ontologies config object
-                    $ontologies = $this->_config->ontologies->toArray();
-                    $ontologiePath = getcwd() . '/' . $ontologies['folder'] . '/';
-                    
-                    $filetype = 'auto';
-                    $newType = Erfurt_Store::MODEL_TYPE_OWL;
-    
-                    // create model
-                    $model = $this->_store->getNewModel($this->_ontologies[$modelName]['namespace'], $this->_ontologies[$modelName]['namespace'], $newType);
-                    $jsonReturnValue['log'][] = "model added";
-                    
-                    // connect it with system model
-                    $useSysBaseNew = array();
-                    $useSysBaseNew[] = array(
-                            'type'  => 'uri',
-                            'value' => $this->_config->sysbase->model
-                            );
-
-                    $model->setOption($this->_config->sysont->properties->hiddenImports, $useSysBaseNew);
-                    $jsonReturnValue['log'][] = "model connected to sys model";
-                    
-                    // set hidden status
-                    if ('true' == $hidden) {
-                        $model->setOption(
-                            $this->_config->sysont->properties->hidden,
-                            array(
-                                array(
-                                    'value'    => 'true',
-                                    'type'     => 'literal',
-                                    'datatype' => EF_XSD_BOOLEAN
-                                    )
-                                )
-                            );
-                        $jsonReturnValue['log'][] = "model set to hidden";
-                    }
-                    
-                    // add filecontent
-                    if (isset($this->_ontologies[$modelName]['files'])) {
-                        foreach ($this->_ontologies[$modelName]['files'] as $filename)
-                        {
-                            // import data to model
-                            $this->_store->importRdf(
-                                $this->_ontologies[$modelName]['namespace'],
-                                $ontologiePath . $filename,
-                                $filetype,
-                                Erfurt_Syntax_RdfParser::LOCATOR_FILE
-                            );
-                            $jsonReturnValue['files'][] = $filename;
-                            $jsonReturnValue['log'][] = "file " . $filename. " added to model " . $modelName;
-                        }
-                    }
-                    
-                    // add linkcontent
-                    if (isset($this->_ontologies[$modelName]['links'])) {
-                        foreach ($this->_ontologies[$modelName]['links'] as $linkUrl)
-                        {
-                            // import data to model
-                            $this->_store->importRdf(
-                                $this->_ontologies[$modelName]['namespace'],
-                                $linkUrl,
-                                $filetype,
-                                Erfurt_Syntax_RdfParser::LOCATOR_URL
-                            );
-                            $jsonReturnValue['links'][] = $linkUrl;
-                            $jsonReturnValue['log'][] = "link " . $linkUrl. " added to model " . $modelName;
-                        }
-                    }
+                
+                switch ($action) {
+                    case "create":
+                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        break;
+                    case "fill":
+                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        break;
+                    case "add":
+                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        break;
+                    case "clear":
+                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
+                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        break;
+                    case "delete":
+                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
+                        break;
+                    case "renew":
+                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
+                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        break;
+                    case "backup":
+                        $this->_backupOntology($modelName);
+                        break;
+                    default:
+                        $jsonReturnValue['error'] = "wrong action (" . $action . ")";
                 }
             } else {
                 $jsonReturnValue['error'] = "no model name";
@@ -182,6 +128,100 @@ class KbmanagerController extends OntoWiki_Controller_Component
         }
 
         echo json_encode($jsonReturnValue);
+    }
+    
+    private function _createOntology($modelName, $hidden, &$jsonReturnValue)
+    {
+        $newType = Erfurt_Store::MODEL_TYPE_OWL;
+
+        // create model
+        $model = $this->_store->getNewModel($this->_ontologies[$modelName]['namespace'], $this->_ontologies[$modelName]['namespace'], $newType);
+        $jsonReturnValue['log'][] = "model added";
+        
+        // connect it with system model
+        $useSysBaseNew = array();
+        $useSysBaseNew[] = array(
+                'type'  => 'uri',
+                'value' => $this->_config->sysbase->model
+                );
+
+        $model->setOption($this->_config->sysont->properties->hiddenImports, $useSysBaseNew);
+        $jsonReturnValue['log'][] = "model connected to sys model";
+        
+        // set hidden status
+        if ('true' == $hidden) {
+            $model->setOption(
+                $this->_config->sysont->properties->hidden,
+                array(
+                    array(
+                        'value'    => 'true',
+                        'type'     => 'literal',
+                        'datatype' => EF_XSD_BOOLEAN
+                        )
+                    )
+                );
+            $jsonReturnValue['log'][] = "model set to hidden";
+        }
+    }
+    
+    private function _addContentToOntology($modelName, &$jsonReturnValue)
+    {
+        // get ontologies config object
+        $ontologies = $this->_config->ontologies->toArray();
+        $ontologiePath = getcwd() . '/' . $ontologies['folder'] . '/';
+        
+        $filetype = 'auto';
+        if ($this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace']))
+        {
+            // add filecontent
+            if (isset($this->_ontologies[$modelName]['files'])) {
+                foreach ($this->_ontologies[$modelName]['files'] as $filename)
+                {
+                    // import data to model
+                    $this->_store->importRdf(
+                        $this->_ontologies[$modelName]['namespace'],
+                        $ontologiePath . $filename,
+                        $filetype,
+                        Erfurt_Syntax_RdfParser::LOCATOR_FILE
+                    );
+                    $jsonReturnValue['files'][] = $filename;
+                    $jsonReturnValue['log'][] = "file " . $filename. " added to model";
+                }
+            }
+            
+            // add linkcontent
+            if (isset($this->_ontologies[$modelName]['links'])) {
+                foreach ($this->_ontologies[$modelName]['links'] as $linkUrl)
+                {
+                    // import data to model
+                    $this->_store->importRdf(
+                        $this->_ontologies[$modelName]['namespace'],
+                        $linkUrl,
+                        $filetype,
+                        Erfurt_Syntax_RdfParser::LOCATOR_URL
+                    );
+                    $jsonReturnValue['links'][] = $linkUrl;
+                    $jsonReturnValue['log'][] = "link " . $linkUrl. " added to model";
+                }
+            }
+        } else {
+            $jsonReturnValue['error'] = "model not available";
+        }
+    }
+    
+    private function _removeOntology($modelName, $backup, &$jsonReturnValue)
+    {
+        if ($this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace']))
+        {
+            if ('true' == $backup)
+            {
+                $this->_backupOntology($modelName);
+            }
+            $this->_store->deleteModel($this->_ontologies[$modelName]['namespace']);
+            $jsonReturnValue['log'][] = "model removed";
+        } else {
+            $jsonReturnValue['error'] = "model not available";
+        }
     }
     
     private function _backupOntology($modelName)
