@@ -93,29 +93,29 @@ class KbmanagerController extends OntoWiki_Controller_Component
                 
                 switch ($action) {
                     case "create":
-                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_createOntology($modelName, $hidden, $jsonReturnValue);
                         break;
                     case "fill":
-                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_addContentToOntology($modelName, $jsonReturnValue);
                         break;
                     case "add":
-                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
-                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_createOntology($modelName, $hidden, $jsonReturnValue);
+                        $jsonReturnValue = $this->_addContentToOntology($modelName, $jsonReturnValue);
                         break;
                     case "clear":
-                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
-                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_removeOntology($modelName, $backup, $jsonReturnValue);
+                        $jsonReturnValue = $this->_createOntology($modelName, $hidden, $jsonReturnValue);
                         break;
                     case "delete":
-                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_removeOntology($modelName, $backup, $jsonReturnValue);
                         break;
                     case "renew":
-                        $this->_removeOntology($modelName, $backup, &$jsonReturnValue);
-                        $this->_createOntology($modelName, $hidden, &$jsonReturnValue);
-                        $this->_addContentToOntology($modelName, &$jsonReturnValue);
+                        $jsonReturnValue = $this->_removeOntology($modelName, $backup, $jsonReturnValue);
+                        $jsonReturnValue = $this->_createOntology($modelName, $hidden, $jsonReturnValue);
+                        $jsonReturnValue = $this->_addContentToOntology($modelName, $jsonReturnValue);
                         break;
                     case "backup":
-                        $this->_backupOntology($modelName);
+                        $jsonReturnValue = $this->_backupOntology($modelName);
                         break;
                     default:
                         $jsonReturnValue['error'] = "wrong action (" . $action . ")";
@@ -130,41 +130,47 @@ class KbmanagerController extends OntoWiki_Controller_Component
         echo json_encode($jsonReturnValue);
     }
     
-    private function _createOntology($modelName, $hidden, &$jsonReturnValue)
+    private function _createOntology($modelName, $hidden, $jsonReturnValue)
     {
         $newType = Erfurt_Store::MODEL_TYPE_OWL;
-
-        // create model
-        $model = $this->_store->getNewModel($this->_ontologies[$modelName]['namespace'], $this->_ontologies[$modelName]['namespace'], $newType);
-        $jsonReturnValue['log'][] = "model added";
         
-        // connect it with system model
-        $useSysBaseNew = array();
-        $useSysBaseNew[] = array(
-                'type'  => 'uri',
-                'value' => $this->_config->sysbase->model
-                );
-
-        $model->setOption($this->_config->sysont->properties->hiddenImports, $useSysBaseNew);
-        $jsonReturnValue['log'][] = "model connected to sys model";
-        
-        // set hidden status
-        if ('true' == $hidden) {
-            $model->setOption(
-                $this->_config->sysont->properties->hidden,
-                array(
+        if (false === $this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace'])) {
+            // create model
+            $model = $this->_store->getNewModel($this->_ontologies[$modelName]['namespace'], $this->_ontologies[$modelName]['namespace'], $newType);
+            $jsonReturnValue['log'][] = "model added";
+            
+            // connect it with system model
+            $useSysBaseNew = array();
+            $useSysBaseNew[] = array(
+                    'type'  => 'uri',
+                    'value' => $this->_config->sysbase->model
+                    );
+    
+            $model->setOption($this->_config->sysont->properties->hiddenImports, $useSysBaseNew);
+            $jsonReturnValue['log'][] = "model connected to sys model";
+            
+            // set hidden status
+            if ('true' == $hidden) {
+                $model->setOption(
+                    $this->_config->sysont->properties->hidden,
                     array(
-                        'value'    => 'true',
-                        'type'     => 'literal',
-                        'datatype' => EF_XSD_BOOLEAN
+                        array(
+                            'value'    => 'true',
+                            'type'     => 'literal',
+                            'datatype' => EF_XSD_BOOLEAN
+                            )
                         )
-                    )
-                );
-            $jsonReturnValue['log'][] = "model set to hidden";
+                    );
+                $jsonReturnValue['log'][] = "model set to hidden";
+            }
+        } else {
+            $jsonReturnValue['log'][] = "model skipped, because it's already available";
         }
+        
+        return $jsonReturnValue;
     }
     
-    private function _addContentToOntology($modelName, &$jsonReturnValue)
+    private function _addContentToOntology($modelName, $jsonReturnValue)
     {
         // get ontologies config object
         $ontologies = $this->_config->ontologies->toArray();
@@ -177,15 +183,47 @@ class KbmanagerController extends OntoWiki_Controller_Component
             if (isset($this->_ontologies[$modelName]['files'])) {
                 foreach ($this->_ontologies[$modelName]['files'] as $filename)
                 {
+                    $file = $ontologiePath . $filename;
+                    $deleteFile = false;
+                    if (
+                        isset($this->_ontologies[$modelName]['options'])
+                        && false !== array_search('replace', $this->_ontologies[$modelName]['options'])
+                    ) {
+                        $fileStr = file_get_contents($file);
+                        foreach ($this->_ontologies[$modelName]['replace'] as $replaceArray) {
+                            $fileStr = str_replace(
+                                $replaceArray['search'],
+                                $replaceArray['replace'],
+                                $fileStr
+                            );
+                            $jsonReturnValue['log'][] = "replace " . $replaceArray['search'];
+                            $jsonReturnValue['log'][] = "with " . $replaceArray['replace'];
+                        }
+                        $filename = date('Y.m.d-H:i:s') . '_' . $filename;
+                        $file = $ontologiePath . 'backup/' . $filename;
+                        if (false !== file_put_contents($file, $fileStr)) {
+                            $jsonReturnValue['log'][] = "write temp file: " . $filename;
+                            $deleteFile = true;
+                        } else {
+                            $jsonReturnValue['log'][] = "couldn't write temp file: " . $filename;
+                        }
+                    }
                     // import data to model
                     $this->_store->importRdf(
                         $this->_ontologies[$modelName]['namespace'],
-                        $ontologiePath . $filename,
+                        $file,
                         $filetype,
                         Erfurt_Syntax_RdfParser::LOCATOR_FILE
                     );
                     $jsonReturnValue['files'][] = $filename;
                     $jsonReturnValue['log'][] = "file " . $filename. " added to model";
+                    if (true === $deleteFile) {
+                        if (true === unlink($file)) {
+                            $jsonReturnValue['log'][] = "deleted temp file: " . $filename;
+                        } else {
+                            $jsonReturnValue['log'][] = "couldn't delete temp file: " . $filename;
+                        }
+                    }
                 }
             }
             
@@ -207,9 +245,11 @@ class KbmanagerController extends OntoWiki_Controller_Component
         } else {
             $jsonReturnValue['error'] = "model not available";
         }
+        
+        return $jsonReturnValue;
     }
     
-    private function _removeOntology($modelName, $backup, &$jsonReturnValue)
+    private function _removeOntology($modelName, $backup, $jsonReturnValue)
     {
         if ($this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace']))
         {
@@ -220,8 +260,10 @@ class KbmanagerController extends OntoWiki_Controller_Component
             $this->_store->deleteModel($this->_ontologies[$modelName]['namespace']);
             $jsonReturnValue['log'][] = "model removed";
         } else {
-            $jsonReturnValue['error'] = "model not available";
+            $jsonReturnValue['log'] = "model skipped, because it's not available";
         }
+        
+        return $jsonReturnValue;
     }
     
     private function _backupOntology($modelName)
