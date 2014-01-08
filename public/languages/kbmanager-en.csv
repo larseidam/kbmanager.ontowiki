@@ -10,3 +10,5 @@ renewKB;renew
 clearKB;clear
 deleteKB;delete
 backupKB;backup
+kbmanager;Knowledge Bases Manager
+ontologieEdit;Edit Knowledge Bases

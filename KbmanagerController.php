@@ -174,7 +174,11 @@ class KbmanagerController extends OntoWiki_Controller_Component
     {
         // get ontologies config object
         $ontologies = $this->_config->ontologies->toArray();
-        $ontologiePath = getcwd() . '/' . $ontologies['folder'] . '/';
+        if (0 === strpos($ontologies['folder'], '/')) {
+            $ontologiePath = $ontologies['folder'] . '/';
+        } else {
+            $ontologiePath = getcwd() . '/' . $ontologies['folder'] . '/';
+        }
         
         $filetype = 'auto';
         if ($this->_store->isModelAvailable($this->_ontologies[$modelName]['namespace']))
